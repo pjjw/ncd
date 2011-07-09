@@ -1,0 +1,29 @@
+package main;
+
+enum CheckStatus {
+  OK = 0;
+  WARNING = 1;
+  CRITICAL = 2;
+  UNKNOWN = 3;
+}
+
+message PerfData {
+  optional string name = 1;
+  optional string data = 2;
+}
+
+message CheckResult {
+  optional string hostname = 1;
+  optional string service_name = 2;
+  optional CheckStatus status = 3 [default = OK];
+  optional bool check_passive = 4 [default = true];
+  optional bool check_scheduled = 5 [default = true];
+  optional string check_output = 10;
+  optional int64 start_timestamp = 11;
+  optional int64 end_timestamp = 12;
+  repeated PerfData perfdata = 13;
+}
+
+message CheckResultSet {
+  repeated CheckResult results = 1;
+}

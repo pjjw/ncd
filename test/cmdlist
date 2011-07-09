@@ -1,0 +1,2 @@
+ahost,aservice,/bin/sh ./test1.sh
+bhost,bservice,/bin/sh ./test2.sh
