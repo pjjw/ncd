@@ -9,7 +9,12 @@ enum CheckStatus {
 
 message PerfData {
   optional string name = 1;
-  optional string data = 2;
+  optional float value = 2;
+	optional string units = 3;
+	optional float warning = 4;
+	optional float critical = 5;
+	optional float minimum = 6;
+	optional float maximum = 7;
 }
 
 message CheckResult {
