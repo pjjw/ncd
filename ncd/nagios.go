@@ -37,6 +37,7 @@ func WriteCheck(check *CheckResult, spooldir string) (fn string, err os.Error) {
 
 func splitUnits(in string) (val float32, units string, err os.Error) {
 	lastnum := strings.LastIndexAny(in, "0123456789.")
+	units = ""
 	if lastnum == -1 {
 		err = os.NewError("non-numeric value")
 		return
@@ -57,75 +58,45 @@ func splitUnits(in string) (val float32, units string, err os.Error) {
 // parse an individial element of perfdata
 func parsePerfDataElement(str string) (pd *PerfData, err os.Error) {
 	m := strings.SplitN(str, "=", 2)
-	name := m[0]
-	pd = &PerfData{Name: proto.String(name)}
-	n := strings.Split(m[1], ";")
-	/* nf := make([]float32, len(n))*/
-	/* for i, v := range n {*/
-	/*   nf[i], err = strconv.Atof32(v)*/
-	/*   if err != nil {*/
-	/*     return*/
-	/*   }*/
-	/* }*/
-
-	// the below feels very ugly.
 	if len(m) < 2 {
 		err = os.NewError("no value")
 		return nil, err
 	}
-	// check for units of measurement
-	lastnum := strings.LastIndexAny(n[0], "0123456789.")
-	if lastnum == -1 {
-		err = os.NewError("non-numeric value")
-		return
+	name := m[0]
+	pd = &PerfData{Name: proto.String(name)}
+	n := strings.Split(m[1], ";")
+	nf := make([]float32, len(n))
+	var units string
+	nf[0], units, err = splitUnits(n[0])
+	pd.Value = proto.Float32(nf[0])
+	if units != "" {
+		pd.Units = proto.String(units)
 	}
-	if lastnum+1 < len(n[0]) {
-		pd.Units = proto.String(n[0][lastnum+1 : len(n[0])])
-		val, err := strconv.Atof32(n[0][0 : lastnum+1])
+	// convert remaining values to floats if they exist
+	for i, v := range n[1:len(n)] {
+		nf[i+1], err = strconv.Atof32(v)
 		if err != nil {
 			return nil, err
 		}
-		pd.Value = proto.Float32(val)
-	} else {
-		val, err := strconv.Atof32(n[0])
-		if err == nil {
-			pd.Value = proto.Float32(val)
-		}
 	}
-	if len(n) < 3 {
+	if len(nf) == 1 {
 		return
 	}
-	val, err := strconv.Atof32(n[1])
-	if err != nil {
+	pd.Warning = proto.Float32(nf[1])
+	if len(nf) == 2 {
 		return
 	}
-	pd.Warning = proto.Float32(val)
-	if len(n) < 4 {
+	pd.Critical = proto.Float32(nf[2])
+	if len(nf) == 3 {
 		return
 	}
-	val, err = strconv.Atof32(n[2])
-	if err != nil {
+	pd.Minimum = proto.Float32(nf[3])
+	if len(nf) == 4 {
 		return
 	}
-	pd.Critical = proto.Float32(val)
-	if len(n) < 5 {
-		return
-	}
-	val, err = strconv.Atof32(n[3])
-	if err != nil {
-		return
-	}
-	pd.Minimum = proto.Float32(val)
-	if len(n) < 6 {
-		return
-	}
-	val, err = strconv.Atof32(n[4])
-	if err != nil {
-		return
-	}
-	pd.Maximum = proto.Float32(val)
+	pd.Maximum = proto.Float32(nf[4])
 
-	return
+	return pd, nil
 }
 
 // parse a string containing perfdata

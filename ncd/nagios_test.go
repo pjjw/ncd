@@ -53,11 +53,12 @@ var perfdatacheck = CheckResult{
 var pdtests = [...]PerfDataCheck{
 	{"OK: matched | time=2sec", "OK: matched ", "[name:\"time\" value:2 units:\"sec\" ]"},
 	{"OK:\tcount to potato | potato=1\n hoooraaaay\n | potatoe=2", "OK:\tcount to potato \n hoooraaaay\n ", "[name:\"potato\" value:1  name:\"potatoe\" value:2 ]"},
+	{"OK:\tcount to potato | potato=1\n hoooraaaay\n | potatoe=2%", "OK:\tcount to potato \n hoooraaaay\n ", "[name:\"potato\" value:1  name:\"potatoe\" value:2 units:\"%\" ]"},
 }
 
 func TestParsePerfDataElement(t *testing.T) {
 	in := [...]PerfElementCheck{
-		{"data=1elem;5;10;1;4", "name:\"data\" value:1 units:\"elem\" warning:5 critical:10 minimum:1 "},
+		{"data=1elem;5;10;1;4", "name:\"data\" value:1 units:\"elem\" warning:5 critical:10 minimum:1 maximum:4 "},
 		{"bananas=3", "name:\"bananas\" value:3 "},
 	}
 	for _, v := range in {
