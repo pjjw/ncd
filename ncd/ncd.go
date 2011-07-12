@@ -6,7 +6,7 @@ import (
 	"http"
 	"os"
 	"strings"
-  "encoding/base64"
+	"encoding/base64"
 	"bytes"
 	"json"
 	"syslog"
@@ -34,29 +34,29 @@ var templ = template.MustParse(templateStr, nil)
 
 func root(w http.ResponseWriter, r *http.Request) {
 	// check header
-  if *password != "" && *username != "" {
-    auth, ok := r.Header["Authorization"]
-    if ok && strings.HasPrefix(auth[0], "Basic ") {
-      str := strings.TrimLeft(auth[0], "Basic ")
-      decode,err := base64.StdEncoding.DecodeString(str)
-      if err != nil {
-        log.Print("cannot decode auth string: ", err)
-        return
-      }
-      user, pass, err := http.UnescapeUserinfo(string(decode))
-      if err != nil {
-        log.Print("auth: couldn't decode user/pass: ", err)
-      }
-      if !(user == *username && pass == *password) {
-        log.Print("auth: wrong user/pass: ", user+"/"+pass, *r)
-        return
-      }
-      /* log.Printf("auth: %#v, user: %s, pass: %s", auth, user, pass)*/
-    } else {
-      log.Print("auth: no authorization")
-      return
-    }
-  }
+	if *password != "" && *username != "" {
+		auth, ok := r.Header["Authorization"]
+		if ok && strings.HasPrefix(auth[0], "Basic ") {
+			str := strings.TrimLeft(auth[0], "Basic ")
+			decode, err := base64.StdEncoding.DecodeString(str)
+			if err != nil {
+				log.Print("cannot decode auth string: ", err)
+				return
+			}
+			user, pass, err := http.UnescapeUserinfo(string(decode))
+			if err != nil {
+				log.Print("auth: couldn't decode user/pass: ", err)
+			}
+			if !(user == *username && pass == *password) {
+				log.Print("auth: wrong user/pass: ", user+"/"+pass, *r)
+				return
+			}
+			/* log.Printf("auth: %#v, user: %s, pass: %s", auth, user, pass)*/
+		} else {
+			log.Print("auth: no authorization")
+			return
+		}
+	}
 
 	checkpb := new(CheckResultSet)
 	if r.Method == "POST" {
@@ -99,12 +99,12 @@ func main() {
 	http.HandleFunc(*endpoint, root)
 	logger.Print("bringing up endpoint")
 
-  var err os.Error
-  if *usessl {
-    err = http.ListenAndServeTLS(*addr, *sslcert, *sslkey, nil)
-  } else {
-    err = http.ListenAndServe(*addr, nil)
-  }
+	var err os.Error
+	if *usessl {
+		err = http.ListenAndServeTLS(*addr, *sslcert, *sslkey, nil)
+	} else {
+		err = http.ListenAndServe(*addr, nil)
+	}
 	if err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}

@@ -154,6 +154,13 @@ func runCommandList(f *os.File, msg *CheckResultSet) {
 	return
 }
 
+func runSingleCheck(msgset *CheckResultSet, cmd []string) {
+  c := make(chan *CheckResult)
+  go RunServiceCheck(cmd, nil, *hostname, *servicename, false, c)
+  result := <-c
+  msgset.Results = append(msgset.Results, result)
+}
+
 func main() {
 	flag.Parse()
 	cmd := flag.Args()
@@ -183,11 +190,12 @@ func main() {
 			}
 		}
 	} else {
-		c := make(chan *CheckResult)
-		go RunServiceCheck(cmd, nil, *hostname, *servicename, false, c)
-		result := <-c
-		msg.Results = append(msg.Results, result)
-	}
+    runSingleCheck(msg, cmd)
+	/*   c := make(chan *CheckResult)*/
+	/*   go RunServiceCheck(cmd, nil, *hostname, *servicename, false, c)*/
+	/*   result := <-c*/
+	/*   msg.Results = append(msg.Results, result)*/
+  }
 
 	buf, err := proto.Marshal(msg)
 	if err != nil {

@@ -1,10 +1,10 @@
 package main
 
 import (
-  "template"
-  "strings"
-  "strconv"
-  "io"
+	"template"
+	"strings"
+	"strconv"
+	"io"
 )
 
 const activeCheck = `### Active Check Result File ###
@@ -34,13 +34,12 @@ output={CheckOutput}
 `
 
 var fmap = template.FormatterMap{
-  "escstr": escapedStringFormatter,
+	"escstr": escapedStringFormatter,
 }
 
 func escapedStringFormatter(w io.Writer, format string, value ...interface{}) {
-  template.StringFormatter(w, format, strings.Trim(strconv.Quote(value[0].(string)), "\""))
+	template.StringFormatter(w, format, strings.Trim(strconv.Quote(value[0].(string)), "\""))
 }
 
 
 var tActiveCheck = template.MustParse(activeCheck, nil)
-
