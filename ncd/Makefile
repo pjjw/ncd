@@ -7,6 +7,7 @@ GOFILES=\
 				checkresult.pb.go\
 				spoolfile.go\
 				templates.go\
+				send_check.go\
 				nagios.go
 
 include $(GOROOT)/src/Make.cmd

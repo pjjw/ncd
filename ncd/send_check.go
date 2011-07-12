@@ -12,19 +12,6 @@ import (
 	/* "strings"*/
 	"time"
 	"fmt"
-	"flag"
-)
-
-var (
-	cmdtimeout  = flag.Int64("timeout", 10, "check command timeout (in secs)")
-	hostname    = flag.String("hostname", "ahost", "reported hostname")
-	servicename = flag.String("service", "aservice", "reported servicename")
-	endpoint    = flag.String("url", "http://127.0.0.1:8323/ncd/", "url endpoint to post check data to")
-	silent      = flag.Bool("silent", false, "suppress output")
-	passive     = flag.Bool("passive", true, "submit as passive check")
-	cmdlist     = flag.Bool("cmdlist", false, "arg is a file containing commands")
-	username    = flag.String("user", "", "basic auth username")
-	password    = flag.String("pass", "", "basic auth password")
 )
 
 type Check struct {
@@ -68,7 +55,7 @@ func runPlugin(cmd, env []string, timeout int64) (result *CheckResult) {
 		StartTimestamp: proto.Int64(starttime),
 		EndTimestamp:   proto.Int64(endtime),
 		Status:         NewCheckStatus(int32(rc)),
-		CheckPassive:   proto.Bool(*passive),
+		CheckPassive:   proto.Bool(*flagPassive),
 	}
 	switch rc {
 	case 0, 1, 2, 3:
@@ -80,7 +67,7 @@ func runPlugin(cmd, env []string, timeout int64) (result *CheckResult) {
 		log.Printf("return code %d out of bounds", rc)
 		// XXX check for timeout/sig9, presently assumed
 		result.Status = NewCheckStatus(CheckStatus_UNKNOWN)
-		result.CheckOutput = proto.String(fmt.Sprintf("UNKNOWN: Command timed out after %d seconds\n", *cmdtimeout) + string(bytes.TrimSpace(output.Bytes())))
+		result.CheckOutput = proto.String(fmt.Sprintf("UNKNOWN: Command timed out after %d seconds\n", *flagCmdTimeout) + string(bytes.TrimSpace(output.Bytes())))
 	}
 	return result
 }
@@ -94,8 +81,8 @@ func PostToEndpoint(buf []byte, url string) {
 		log.Print("http.NewRequest: ", err)
 	}
 	rq.Header.Set("Content-Type", "application/x-protobuf")
-	if *username != "" && *password != "" {
-		rq.SetBasicAuth(*username, *password)
+	if *flagUsername != "" && *flagPassword != "" {
+		rq.SetBasicAuth(*flagUsername, *flagPassword)
 	}
 
 	resp, err := new(http.Client).Do(rq)
@@ -112,7 +99,7 @@ func RunServiceCheck(cmd, env []string, host, service string, shell bool, c chan
 		cmd = append([]string{"/bin/sh", "-c"}, cmd...)
 	}
 	/* log.Printf("running cmd %v", cmd)*/
-	result = runPlugin(cmd, nil, *cmdtimeout*1e9)
+	result = runPlugin(cmd, nil, *flagCmdTimeout*1e9)
 	result.Hostname = proto.String(host)
 	result.ServiceName = proto.String(service)
 	/* log.Printf("check returned! %s", proto.CompactTextString(result))*/
@@ -155,53 +142,8 @@ func runCommandList(f *os.File, msg *CheckResultSet) {
 }
 
 func runSingleCheck(msgset *CheckResultSet, cmd []string) {
-  c := make(chan *CheckResult)
-  go RunServiceCheck(cmd, nil, *hostname, *servicename, false, c)
-  result := <-c
-  msgset.Results = append(msgset.Results, result)
-}
-
-func main() {
-	flag.Parse()
-	cmd := flag.Args()
-
-	if *silent {
-		devnull, _ := os.Open(os.DevNull)
-		log.SetOutput(devnull)
-	}
-	if len(cmd) < 1 {
-		if *cmdlist {
-			log.Fatal("missing command list file")
-		} else {
-			log.Fatal("missing command")
-		}
-	}
-
-	msg := new(CheckResultSet)
-
-	if *cmdlist {
-		for _, v := range cmd {
-			f, err := os.Open(v)
-			if err != nil {
-				log.Print("error: ", err)
-			} else {
-				defer f.Close()
-				runCommandList(f, msg)
-			}
-		}
-	} else {
-    runSingleCheck(msg, cmd)
-	/*   c := make(chan *CheckResult)*/
-	/*   go RunServiceCheck(cmd, nil, *hostname, *servicename, false, c)*/
-	/*   result := <-c*/
-	/*   msg.Results = append(msg.Results, result)*/
-  }
-
-	buf, err := proto.Marshal(msg)
-	if err != nil {
-		log.Fatal("marshalling error: ", err)
-	}
-
-	// now write to url endpoint
-	PostToEndpoint(buf, *endpoint)
+	c := make(chan *CheckResult)
+	go RunServiceCheck(cmd, nil, *flagHostname, *flagServicename, false, c)
+	result := <-c
+	msgset.Results = append(msgset.Results, result)
 }

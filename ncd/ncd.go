@@ -15,16 +15,23 @@ import (
 )
 
 var (
-	addr     = flag.String("addr", ":8323", "http service address")
-	endpoint = flag.String("endpoint", "/ncd/", "http service endpoint")
-	usessl   = flag.Bool("ssl", false, "use ssl")
-	sslcert  = flag.String("cert", "cert.pem", "ssl cert file")
-	sslkey   = flag.String("key", "key.pem", "ssl key file")
-	spooldir = flag.String("spooldir", "/var/nagios/spool/checkresults", "nagios spool directory")
-	debug    = flag.Bool("syslog", true, "log to syslog- if false, log to stdout")
-	username = flag.String("username", "npd", "basic auth username")
-	password = flag.String("password", "npd", "basic auth password")
-	realm    = flag.String("realm", "npd", "basic auth realm")
+	flagServer      = flag.Bool("server", false, "run ncd server")
+	flagCmdTimeout  = flag.Int64("timeout", 10, "check command timeout (in secs)")
+	flagHostname    = flag.String("host", "", "reported hostname")
+	flagServicename = flag.String("service", "", "reported servicename")
+	flagUrl         = flag.String("url", "http://127.0.0.1:8323/ncd/", "url endpoint to post check data to")
+	flagSilent      = flag.Bool("silent", false, "suppress output")
+	flagPassive     = flag.Bool("passive", true, "submit as passive check")
+	flagCmdlist     = flag.Bool("cmdlist", false, "arg is a file containing commands")
+	flagAddr        = flag.String("addr", ":8323", "http service address")
+	flagEndpoint    = flag.String("endpoint", "/ncd/", "http service endpoint")
+	flagUseSSL      = flag.Bool("ssl", false, "use ssl")
+	flagSSLCert     = flag.String("cert", "cert.pem", "ssl cert file")
+	flagSSLKey      = flag.String("key", "key.pem", "ssl key file")
+	flagSpoolDir    = flag.String("spooldir", "/var/nagios/spool/checkresults", "nagios spool directory")
+	flagSyslog      = flag.Bool("syslog", true, "log to syslog- if false, log to stdout")
+	flagUsername    = flag.String("username", "npd", "basic auth username")
+	flagPassword    = flag.String("password", "npd", "basic auth password")
 
 	logger = syslog.NewLogger(syslog.LOG_INFO, log.Flags())
 )
@@ -34,7 +41,7 @@ var templ = template.MustParse(templateStr, nil)
 
 func root(w http.ResponseWriter, r *http.Request) {
 	// check header
-	if *password != "" && *username != "" {
+	if *flagPassword != "" && *flagUsername != "" {
 		auth, ok := r.Header["Authorization"]
 		if ok && strings.HasPrefix(auth[0], "Basic ") {
 			str := strings.TrimLeft(auth[0], "Basic ")
@@ -47,7 +54,7 @@ func root(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				log.Print("auth: couldn't decode user/pass: ", err)
 			}
-			if !(user == *username && pass == *password) {
+			if !(user == *flagUsername && pass == *flagPassword) {
 				log.Print("auth: wrong user/pass: ", user+"/"+pass, *r)
 				return
 			}
@@ -79,7 +86,7 @@ func root(w http.ResponseWriter, r *http.Request) {
 		}
 		logger.Printf("check returned! %s", proto.CompactTextString(checkpb))
 		for _, v := range checkpb.Results {
-			_, err := WriteCheck(v, *spooldir)
+			_, err := WriteCheck(v, *flagSpoolDir)
 			if err != nil {
 				logger.Print("writecheck failed: ", err)
 			}
@@ -93,20 +100,72 @@ func root(w http.ResponseWriter, r *http.Request) {
 func main() {
 	flag.Parse()
 	// set up logging
-	if !*debug {
-		logger = log.New(os.Stderr, log.Prefix(), log.Flags())
-	}
-	http.HandleFunc(*endpoint, root)
-	logger.Print("bringing up endpoint")
+	switch *flagServer {
+	case true:
+		if !*flagSyslog {
+			logger = log.New(os.Stderr, log.Prefix(), log.Flags())
+		}
+		http.HandleFunc(*flagEndpoint, root)
+		logger.Print("bringing up endpoint")
 
-	var err os.Error
-	if *usessl {
-		err = http.ListenAndServeTLS(*addr, *sslcert, *sslkey, nil)
-	} else {
-		err = http.ListenAndServe(*addr, nil)
-	}
-	if err != nil {
-		log.Fatal("ListenAndServe:", err)
+		var err os.Error
+		if *flagUseSSL {
+			err = http.ListenAndServeTLS(*flagAddr, *flagSSLCert, *flagSSLKey, nil)
+		} else {
+			err = http.ListenAndServe(*flagAddr, nil)
+		}
+		if err != nil {
+			log.Fatal("ListenAndServe:", err)
+		}
+	case false:
+		cmd := flag.Args()
+
+		switch {
+		case *flagHostname == "":
+			log.Fatal("missing hostname")
+		case *flagServicename == "":
+			log.Fatal("missing servicename")
+		}
+
+		if *flagSilent {
+			devnull, _ := os.Open(os.DevNull)
+			log.SetOutput(devnull)
+		}
+		if len(cmd) < 1 {
+			if *flagCmdlist {
+				log.Fatal("missing command list file")
+			} else {
+				log.Fatal("missing command")
+			}
+		}
+
+		msg := new(CheckResultSet)
+
+		if *flagCmdlist {
+			for _, v := range cmd {
+				f, err := os.Open(v)
+				if err != nil {
+					log.Print("error: ", err)
+				} else {
+					defer f.Close()
+					runCommandList(f, msg)
+				}
+			}
+		} else {
+			runSingleCheck(msg, cmd)
+			/*   c := make(chan *CheckResult)*/
+			/*   go RunServiceCheck(cmd, nil, *hostname, *servicename, false, c)*/
+			/*   result := <-c*/
+			/*   msg.Results = append(msg.Results, result)*/
+		}
+
+		buf, err := proto.Marshal(msg)
+		if err != nil {
+			log.Fatal("marshalling error: ", err)
+		}
+
+		// now write to url endpoint
+		PostToEndpoint(buf, *flagUrl)
 	}
 }
 

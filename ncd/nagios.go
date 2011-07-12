@@ -77,23 +77,19 @@ func parsePerfDataElement(str string) (pd *PerfData, err os.Error) {
 			return nil, err
 		}
 	}
-	if len(nf) == 1 {
-		return
+	switch {
+	case len(nf) >= 5:
+		pd.Maximum = proto.Float32(nf[4])
+		fallthrough
+	case len(nf) >= 4:
+		pd.Minimum = proto.Float32(nf[3])
+		fallthrough
+	case len(nf) >= 3:
+		pd.Critical = proto.Float32(nf[2])
+		fallthrough
+	case len(nf) >= 2:
+		pd.Warning = proto.Float32(nf[1])
 	}
-	pd.Warning = proto.Float32(nf[1])
-	if len(nf) == 2 {
-		return
-	}
-	pd.Critical = proto.Float32(nf[2])
-	if len(nf) == 3 {
-		return
-	}
-	pd.Minimum = proto.Float32(nf[3])
-	if len(nf) == 4 {
-		return
-	}
-	pd.Maximum = proto.Float32(nf[4])
-
 	return pd, nil
 }
 
