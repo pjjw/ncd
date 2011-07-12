@@ -1,29 +1,14 @@
-# A sample top level Makefile for multi package Go projects.
-
 include $(GOROOT)/src/Make.inc
 
-CMDS=\
-        send_check\
-        ncd
+TARG=ncd
 
-all: make
+GOFILES=\
+				ncd.go\
+				checkresult.pb.go\
+				spoolfile.go\
+				templates.go\
+				send_check.go\
+				nagios.go
 
-make: $(addsuffix .make, $(CMDS))
-clean: $(addsuffix .clean, $(CMDS))
-
-%.install:
-	$(MAKE) -C $* install
-
-# compile all packages before any command
-%.make:
-	$(MAKE) -C $*
-
-# establish dependancies between packages
-#package-2.install: package-1.install
-#package-1.install package-2.install: package-3.install
-
-%.clean:
-	$(MAKE) -C $* clean
-
-%.nuke:
-	$(MAKE) -C $* nuke
+include $(GOROOT)/src/Make.cmd
+include $(GOROOT)/src/pkg/goprotobuf.googlecode.com/hg/Make.protobuf

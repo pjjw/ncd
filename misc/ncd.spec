@@ -17,7 +17,6 @@ Packager: peter woodman <pjjw@google.com>
 Source0: ncd
 Source1: ncd.init
 Source2: ncd.options
-Source3: send_check
 
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 
@@ -35,8 +34,7 @@ pair of utilities to inject checks into nagios' checkresult spool
 %install
 rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT
-install -D -m 755 %{_sourcedir}/ncd %{buildroot}/usr/sbin/ncd
-install -D -m 755 %{_sourcedir}/send_check %{buildroot}/usr/bin/send_check
+install -D -m 755 %{_sourcedir}/ncd %{buildroot}/usr/bin/ncd
 install -D -m 755 %{_sourcedir}/ncd.init %{buildroot}/etc/init.d/ncd
 install -D -m 644 %{_sourcedir}/ncd.options %{buildroot}/etc/sysconfig/ncd
 

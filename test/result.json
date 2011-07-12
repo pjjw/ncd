@@ -1,0 +1,20 @@
+
+{
+    "Results":
+    [
+        {
+            "Hostname":"testhost.foo.bar",
+            "ServiceName":"test-service",
+            "Status":0,
+            "CheckPassive":null,
+            "CheckScheduled":null,
+            "CheckOutput":null,
+            "StartTimestamp":151892832,
+            "EndTimestamp":151895000,
+            "Perfdata":
+            [{"Name":"frob","Data":"100"}
+            ]
+        }
+    ]
+}
+
