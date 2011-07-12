@@ -56,19 +56,20 @@ var pdtests = [...]PerfDataCheck{
 	{"OK:\tcount to potato | potato=1\n hoooraaaay\n | potatoe=2%", "OK:\tcount to potato \n hoooraaaay\n ", "[name:\"potato\" value:1  name:\"potatoe\" value:2 units:\"%\" ]"},
 }
 
+var petests = [...]PerfElementCheck{
+	{"data=1elem;5;10;1;4", "name:\"data\" value:1 units:\"elem\" warning:5 critical:10 minimum:1 maximum:4 "},
+	{"bananas=3", "name:\"bananas\" value:3 "},
+}
+
 func TestParsePerfDataElement(t *testing.T) {
-	in := [...]PerfElementCheck{
-		{"data=1elem;5;10;1;4", "name:\"data\" value:1 units:\"elem\" warning:5 critical:10 minimum:1 maximum:4 "},
-		{"bananas=3", "name:\"bananas\" value:3 "},
-	}
-	for _, v := range in {
+	for i, v := range petests {
 		pd, err := parsePerfDataElement(v.in)
 		if err != nil {
-			t.Error("parsePerfDataElement returned error on ", v, ": ", err)
+			t.Errorf("test %d: parsePerfDataElement returned error: %v", i, err)
 		}
 		out := proto.CompactTextString(pd)
 		if v.out != out {
-			t.Error("mismatch for", v.in, ":\n", out, "\n", v.out)
+			t.Errorf("test %d: mismatch:\noutput:   %v\nexpected: %v", i, out, v.out)
 		}
 	}
 }
@@ -123,6 +124,7 @@ func TestCreateSpoolFile(t *testing.T) {
 	if err != nil {
 		t.Error("spoolFile:", err)
 	}
+	t.Log("wrote check to", f.Name())
 	fi, err := f.Stat()
 	if err != nil {
 		t.Error("spoolFile: couldn't stat file:", err)

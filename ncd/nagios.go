@@ -1,8 +1,6 @@
 package main
 
 import (
-	/* "regexp"*/
-	//  "fmt"
 	"os"
 	"fmt"
 	"strconv"
