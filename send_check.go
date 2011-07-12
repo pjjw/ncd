@@ -28,6 +28,7 @@ type Check struct {
 func runPlugin(cmd, env []string, timeout int64) (result *CheckResult) {
 	var output bytes.Buffer
 	rc := 0
+	log.Printf("running check %s", cmd)
 
 	/* c := exec.Command(cmd[0], cmd...)*/
 	c := exec.Command(cmd[0], cmd[1:]...)
@@ -60,12 +61,13 @@ func runPlugin(cmd, env []string, timeout int64) (result *CheckResult) {
 	switch rc {
 	case 0, 1, 2, 3:
 		// this is ok!
+		log.Printf("%s: returned %s", cmd, CheckStatus_name[int32(rc)])
 		result.Status = NewCheckStatus(int32(rc))
 		result.CheckOutput = proto.String(string(bytes.TrimSpace(output.Bytes())))
 		break
 	default:
-		log.Printf("return code %d out of bounds", rc)
 		// XXX check for timeout/sig9, presently assumed
+		log.Printf("%s: return code %d", cmd, rc)
 		result.Status = NewCheckStatus(CheckStatus_UNKNOWN)
 		result.CheckOutput = proto.String(fmt.Sprintf("UNKNOWN: Command timed out after %d seconds\n", *flagCmdTimeout) + string(bytes.TrimSpace(output.Bytes())))
 	}

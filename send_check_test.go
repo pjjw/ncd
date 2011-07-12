@@ -100,7 +100,6 @@ func TestMarshalUnmarshalBase64(t *testing.T) {
 	t.Log("urldecoded")
 
 	t.Log(buf, decbuf)
-
 	rcr := &CheckResult{}
 	t.Log("unmarshalling")
 	err = proto.Unmarshal(decbuf, rcr)

@@ -19,7 +19,7 @@ var (
 	flagCmdTimeout  = flag.Int64("timeout", 10, "check command timeout (in secs)")
 	flagHostname    = flag.String("host", "", "reported hostname")
 	flagServicename = flag.String("service", "", "reported servicename")
-	flagUrl         = flag.String("url", "http://127.0.0.1:8323/ncd/", "url endpoint to post check data to")
+	flagURL         = flag.String("url", "http://127.0.0.1:8323/ncd/", "url endpoint to post check data to")
 	flagSilent      = flag.Bool("silent", false, "suppress output")
 	flagPassive     = flag.Bool("passive", true, "submit as passive check")
 	flagCmdlist     = flag.Bool("cmdlist", false, "arg is a file containing commands")
@@ -99,12 +99,14 @@ func root(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	flag.Parse()
+	cmd := flag.Args()
 	// set up logging
+	if !*flagSyslog {
+		logger = log.New(os.Stderr, log.Prefix(), log.Flags())
+	}
 	switch *flagServer {
 	case true:
-		if !*flagSyslog {
-			logger = log.New(os.Stderr, log.Prefix(), log.Flags())
-		}
+
 		http.HandleFunc(*flagEndpoint, root)
 		logger.Print("bringing up endpoint")
 
@@ -118,25 +120,18 @@ func main() {
 			log.Fatal("ListenAndServe:", err)
 		}
 	case false:
-		cmd := flag.Args()
+		if *flagSilent {
+			devnull, _ := os.Open(os.DevNull)
+			log.SetOutput(devnull)
+		}
 
 		switch {
 		case *flagHostname == "":
 			log.Fatal("missing hostname")
 		case *flagServicename == "":
 			log.Fatal("missing servicename")
-		}
-
-		if *flagSilent {
-			devnull, _ := os.Open(os.DevNull)
-			log.SetOutput(devnull)
-		}
-		if len(cmd) < 1 {
-			if *flagCmdlist {
-				log.Fatal("missing command list file")
-			} else {
-				log.Fatal("missing command")
-			}
+		case len(cmd) < 1:
+			log.Fatal("missing command(s)")
 		}
 
 		msg := new(CheckResultSet)
@@ -153,10 +148,6 @@ func main() {
 			}
 		} else {
 			runSingleCheck(msg, cmd)
-			/*   c := make(chan *CheckResult)*/
-			/*   go RunServiceCheck(cmd, nil, *hostname, *servicename, false, c)*/
-			/*   result := <-c*/
-			/*   msg.Results = append(msg.Results, result)*/
 		}
 
 		buf, err := proto.Marshal(msg)
@@ -164,8 +155,7 @@ func main() {
 			log.Fatal("marshalling error: ", err)
 		}
 
-		// now write to url endpoint
-		PostToEndpoint(buf, *flagUrl)
+		PostToEndpoint(buf, *flagURL)
 	}
 }
 
