@@ -1,7 +1,7 @@
 package main
 
 import (
-	"template"
+	"old/template"
 	"strings"
 	"strconv"
 	"io"
@@ -40,6 +40,5 @@ var fmap = template.FormatterMap{
 func escapedStringFormatter(w io.Writer, format string, value ...interface{}) {
 	template.StringFormatter(w, format, strings.Trim(strconv.Quote(value[0].(string)), "\""))
 }
-
 
 var tActiveCheck = template.MustParse(activeCheck, nil)

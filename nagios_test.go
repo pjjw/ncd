@@ -33,7 +33,6 @@ var hostcheck = CheckResult{
 	EndTimestamp:   proto.Int64(time.Nanoseconds()),
 }
 
-
 type PerfElementCheck struct{ in, out string }
 type PerfDataCheck struct{ in, outstr, outpd string }
 

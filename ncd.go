@@ -5,12 +5,13 @@ import (
 	"flag"
 	"http"
 	"os"
+	"url"
 	"strings"
 	"encoding/base64"
 	"bytes"
 	"json"
 	"syslog"
-	"template"
+	"old/template"
 	"goprotobuf.googlecode.com/hg/proto"
 )
 
@@ -36,7 +37,6 @@ var (
 	logger = syslog.NewLogger(syslog.LOG_INFO, log.Flags())
 )
 
-
 var templ = template.MustParse(templateStr, nil)
 
 func root(w http.ResponseWriter, r *http.Request) {
@@ -50,7 +50,7 @@ func root(w http.ResponseWriter, r *http.Request) {
 				log.Print("cannot decode auth string: ", err)
 				return
 			}
-			user, pass, err := http.UnescapeUserinfo(string(decode))
+			user, pass, err := url.UnescapeUserinfo(string(decode))
 			if err != nil {
 				log.Print("auth: couldn't decode user/pass: ", err)
 			}
@@ -158,6 +158,5 @@ func main() {
 		PostToEndpoint(buf, *flagURL)
 	}
 }
-
 
 const templateStr = `ok`

@@ -55,14 +55,14 @@ func runPlugin(cmd, env []string, timeout int64) (result *CheckResult) {
 	result = &CheckResult{
 		StartTimestamp: proto.Int64(starttime),
 		EndTimestamp:   proto.Int64(endtime),
-		Status:         NewCheckStatus(int32(rc)),
+		Status:         NewCheckStatus(CheckStatus(rc)),
 		CheckPassive:   proto.Bool(*flagPassive),
 	}
 	switch rc {
 	case 0, 1, 2, 3:
 		// this is ok!
 		log.Printf("%s: returned %s", cmd, CheckStatus_name[int32(rc)])
-		result.Status = NewCheckStatus(int32(rc))
+		result.Status = NewCheckStatus(CheckStatus(rc))
 		result.CheckOutput = proto.String(string(bytes.TrimSpace(output.Bytes())))
 		break
 	default:
